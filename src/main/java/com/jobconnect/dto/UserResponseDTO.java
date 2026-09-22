@@ -1,0 +1,49 @@
+package com.jobconnect.dto;
+
+import com.jobconnect.entity.Role;
+
+public class UserResponseDTO {
+
+    private Long id;
+    private String name;
+    private String email;
+    private Role role;
+    private boolean active;
+
+    public UserResponseDTO() {
+    }
+
+    public UserResponseDTO(
+            Long id,
+            String name,
+            String email,
+            Role role,
+            boolean active) {
+
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.role = role;
+        this.active = active;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+}
