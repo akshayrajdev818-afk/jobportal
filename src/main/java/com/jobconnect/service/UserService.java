@@ -3,8 +3,10 @@ package com.jobconnect.service;
 import com.jobconnect.dto.UserRequestDTO;
 import com.jobconnect.dto.UserResponseDTO;
 import com.jobconnect.entity.User;
+import com.jobconnect.exception.UserNotFoundException;
 import com.jobconnect.repository.UserRepository;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,11 +14,16 @@ import java.util.List;
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
+	private final UserRepository userRepository;
+	private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+	public UserService(
+	        UserRepository userRepository,
+	        PasswordEncoder passwordEncoder) {
+
+	    this.userRepository = userRepository;
+	    this.passwordEncoder = passwordEncoder;
+	}
 
     public UserResponseDTO createUser(UserRequestDTO dto) {
 
@@ -24,7 +31,7 @@ public class UserService {
 
         user.setName(dto.getName());
         user.setEmail(dto.getEmail());
-        user.setPassword(dto.getPassword());
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
         user.setRole(dto.getRole());
         user.setActive(dto.isActive());
 
@@ -45,7 +52,7 @@ public class UserService {
 
         User user = userRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("User not found"));
+                        new UserNotFoundException("User not found"));
 
         return convertToResponseDTO(user);
     }

@@ -2,6 +2,7 @@ package com.jobconnect.service;
 
 import com.jobconnect.entity.Application;
 import com.jobconnect.entity.ApplicationStatus;
+import com.jobconnect.exception.DuplicateApplicationException;
 import com.jobconnect.repository.ApplicationRepository;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,18 @@ public class ApplicationService {
 
     // Apply for a job
     public Application applyForJob(Application application) {
+
+        Long jobId = application.getJob().getId();
+        Long candidateId = application.getCandidate().getId();
+
+        boolean alreadyApplied =
+                applicationRepository
+                        .existsByJobIdAndCandidateId(jobId, candidateId);
+
+        if (alreadyApplied) {
+            throw new DuplicateApplicationException(
+                    "Candidate has already applied for this job");
+        }
 
         application.setApplicationDate(LocalDate.now());
         application.setStatus(ApplicationStatus.APPLIED);
