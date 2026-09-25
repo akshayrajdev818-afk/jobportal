@@ -1,11 +1,18 @@
 package com.jobconnect.config;
 
+import java.util.List;
+
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
 import com.jobconnect.security.JwtAuthenticationFilter;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import static org.springframework.http.HttpMethod.*;
 
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,13 +28,11 @@ public class SecurityConfig {
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter) {
 
-        this.jwtAuthenticationFilter =
-                jwtAuthenticationFilter;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 
@@ -38,23 +43,42 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
 
+            .cors(cors ->
+                cors.configurationSource(corsConfigurationSource())
+            )
+
             .authorizeHttpRequests(auth -> auth
 
-            	    .requestMatchers("/api/auth/**")
-            	    .permitAll()
+                .requestMatchers("/api/auth/**")
+                .permitAll()
 
-            	    .requestMatchers("/api/candidate/**")
-            	    .hasRole("CANDIDATE")
+                .requestMatchers(POST, "/api/users")
+                .permitAll()
 
-            	    .requestMatchers("/api/recruiter/**")
-            	    .hasRole("RECRUITER")
+                .requestMatchers(GET, "/api/jobs/**")
+                .permitAll()
 
-            	    .requestMatchers("/api/admin/**")
-            	    .hasRole("ADMIN")
+                .requestMatchers(POST, "/api/jobs/**")
+                .hasRole("RECRUITER")
 
-            	    .anyRequest()
-            	    .authenticated()
-            	)
+                .requestMatchers(PUT, "/api/jobs/**")
+                .hasRole("RECRUITER")
+
+                .requestMatchers(DELETE, "/api/jobs/**")
+                .hasRole("RECRUITER")
+
+                .requestMatchers(POST, "/api/applications")
+                .hasRole("CANDIDATE")
+
+                .requestMatchers(PUT, "/api/applications/**")
+                .hasRole("RECRUITER")
+
+                .requestMatchers("/api/admin/**")
+                .hasRole("ADMIN")
+
+                .anyRequest()
+                .authenticated()
+            )
 
             .addFilterBefore(
                 jwtAuthenticationFilter,
@@ -62,5 +86,42 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        CorsConfiguration configuration =
+                new CorsConfiguration();
+
+        configuration.setAllowedOrigins(
+                List.of("http://localhost:5173")
+        );
+
+        configuration.setAllowedMethods(
+                List.of(
+                    "GET",
+                    "POST",
+                    "PUT",
+                    "DELETE",
+                    "OPTIONS"
+                )
+        );
+
+        configuration.setAllowedHeaders(
+                List.of("*")
+        );
+
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source =
+                new UrlBasedCorsConfigurationSource();
+
+        source.registerCorsConfiguration(
+                "/**",
+                configuration
+        );
+
+        return source;
     }
 }

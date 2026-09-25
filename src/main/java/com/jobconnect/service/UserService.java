@@ -25,20 +25,24 @@ public class UserService {
 	    this.passwordEncoder = passwordEncoder;
 	}
 
-    public UserResponseDTO createUser(UserRequestDTO dto) {
+	public UserResponseDTO createUser(UserRequestDTO dto) {
 
-        User user = new User();
+	    User user = new User();
 
-        user.setName(dto.getName());
-        user.setEmail(dto.getEmail());
-        user.setPassword(passwordEncoder.encode(dto.getPassword()));
-        user.setRole(dto.getRole());
-        user.setActive(dto.isActive());
+	    user.setName(dto.getName());
+	    user.setEmail(dto.getEmail());
 
-        User savedUser = userRepository.save(user);
+	    user.setPassword(
+	            passwordEncoder.encode(dto.getPassword())
+	    );
 
-        return convertToResponseDTO(savedUser);
-    }
+	    user.setRole(dto.getRole());
+	    user.setActive(dto.isActive());
+
+	    User savedUser = userRepository.save(user);
+
+	    return convertToResponseDTO(savedUser);
+	}
 
     public List<UserResponseDTO> getAllUsers() {
 
