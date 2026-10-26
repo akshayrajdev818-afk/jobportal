@@ -119,6 +119,10 @@ public class Job {
 	public void setActive(boolean active) {
 		this.active = active;
 	}
+	
+	public Boolean getActive() {
+	    return active;
+	}
 
 	public User getRecruiter() {
 		return recruiter;

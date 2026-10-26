@@ -1,10 +1,16 @@
+
 package com.jobconnect.service;
 
 import com.jobconnect.entity.Application;
 import com.jobconnect.entity.ApplicationStatus;
+import com.jobconnect.entity.User;
 import com.jobconnect.exception.DuplicateApplicationException;
 import com.jobconnect.repository.ApplicationRepository;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,8 +31,8 @@ public class ApplicationService {
         Long candidateId = application.getCandidate().getId();
 
         boolean alreadyApplied =
-                applicationRepository
-                        .existsByJobIdAndCandidateId(jobId, candidateId);
+                applicationRepository.existsByJobIdAndCandidateId(
+                        jobId, candidateId);
 
         if (alreadyApplied) {
             throw new DuplicateApplicationException(
@@ -39,38 +45,75 @@ public class ApplicationService {
         return applicationRepository.save(application);
     }
 
-    // Get all applications
+    // Existing method: get all applications
     public List<Application> getAllApplications() {
         return applicationRepository.findAll();
     }
 
-    // Get application by ID
+    // Existing method: get application by ID
     public Application getApplicationById(Long id) {
-
         return applicationRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Application not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Application not found"));
     }
 
-    // Update application status
-    public Application updateStatus(
-            Long id,
-            ApplicationStatus status) {
+    // Recruiter: get applications for their own jobs
+    @Transactional(readOnly = true)
+    public List<Application> getApplicationsForRecruiter(Long recruiterId) {
+        return applicationRepository.findByJob_Recruiter_Id(recruiterId);
+    }
 
-        Application application = getApplicationById(id);
+    // Recruiter: update status only for their own job applications
+    @Transactional
+    public Application updateStatus(
+            Long applicationId,
+            ApplicationStatus status,
+            User recruiter) {
+
+        Application application = getApplicationById(applicationId);
+
+        if (application.getJob() == null
+                || application.getJob().getRecruiter() == null
+                || !application.getJob().getRecruiter().getId()
+                        .equals(recruiter.getId())) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You cannot update applications for another recruiter's job");
+        }
 
         application.setStatus(status);
 
         return applicationRepository.save(application);
     }
 
-    // Delete application
+    // Existing method retained for compatibility
+    public Application updateStatus(
+            Long id,
+            ApplicationStatus status) {
+
+        Application application = getApplicationById(id);
+        application.setStatus(status);
+        return applicationRepository.save(application);
+    }
+
+    // Existing delete method retained
     public void deleteApplication(Long id) {
 
         if (!applicationRepository.existsById(id)) {
-            throw new RuntimeException("Application not found");
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "Application not found");
         }
 
         applicationRepository.deleteById(id);
     }
+    
+   
+ // Candidate: get applications submitted by this candidate
+ @Transactional(readOnly = true)
+ public List<Application> getApplicationsForCandidate(Long candidateId) {
+     return applicationRepository.findByCandidate_Id(candidateId);
+ }
+
 }
+

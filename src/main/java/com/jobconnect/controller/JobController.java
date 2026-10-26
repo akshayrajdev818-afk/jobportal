@@ -1,8 +1,13 @@
+
 package com.jobconnect.controller;
 
 import com.jobconnect.entity.Job;
+import com.jobconnect.entity.User;
 import com.jobconnect.service.JobService;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,63 +16,105 @@ import java.util.List;
 @RequestMapping("/api/jobs")
 public class JobController {
 
-	private final JobService jobService;
+    private final JobService jobService;
 
-	public JobController(JobService jobService) {
-		this.jobService = jobService;
-	}
+    public JobController(JobService jobService) {
+        this.jobService = jobService;
+    }
 
-	// CREATE JOB
-	@PostMapping
-	public ResponseEntity<Job> createJob(@RequestBody Job job) {
-		Job savedJob = jobService.createJob(job);
-		return ResponseEntity.ok(savedJob);
-	}
+    // Create a job for the authenticated recruiter.
+    @PostMapping
+    public ResponseEntity<Job> createJob(
+            @RequestBody Job job,
+            @AuthenticationPrincipal User recruiter) {
 
-	// GET ALL JOBS
-	@GetMapping
-	public ResponseEntity<List<Job>> getAllJobs() {
-		return ResponseEntity.ok(jobService.getAllJobs());
-	}
+        if (recruiter == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
 
-	@GetMapping("/search")
-	public ResponseEntity<List<Job>> searchJobs(@RequestParam String keyword) {
+        Job savedJob = jobService.createJob(job, recruiter);
 
-		return ResponseEntity.ok(jobService.searchJobs(keyword));
-	}
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(savedJob);
+    }
 
-	@GetMapping("/location")
-	public ResponseEntity<List<Job>> getJobsByLocation(@RequestParam String location) {
+    // Get all jobs.
+    @GetMapping
+    public ResponseEntity<List<Job>> getAllJobs() {
+        return ResponseEntity.ok(jobService.getAllJobs());
+    }
 
-		return ResponseEntity.ok(jobService.getJobsByLocation(location));
-	}
+    // Get jobs belonging to the authenticated recruiter.
+    @GetMapping("/my-jobs")
+    public ResponseEntity<List<Job>> getMyJobs(
+            @AuthenticationPrincipal User recruiter) {
 
-	@GetMapping("/type")
-	public ResponseEntity<List<Job>> getJobsByEmploymentType(@RequestParam String employmentType) {
+        if (recruiter == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .build();
+        }
 
-		return ResponseEntity.ok(jobService.getJobsByEmploymentType(employmentType));
-	}
+        List<Job> jobs = jobService.getMyJobs(recruiter.getId());
 
-	// GET JOB BY ID
-	@GetMapping("/{id}")
-	public ResponseEntity<Job> getJobById(@PathVariable Long id) {
-		return jobService.getJobById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-	}
+        return ResponseEntity.ok(jobs);
+    }
 
-	// UPDATE JOB
-	@PutMapping("/{id}")
-	public ResponseEntity<Job> updateJob(@PathVariable Long id, @RequestBody Job job) {
+    // Search jobs by title.
+    @GetMapping("/search")
+    public ResponseEntity<List<Job>> searchJobs(
+            @RequestParam String keyword) {
 
-		return ResponseEntity.ok(jobService.updateJob(id, job));
-	}
+        return ResponseEntity.ok(
+                jobService.searchJobs(keyword));
+    }
 
-	// DELETE JOB
-	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> deleteJob(@PathVariable Long id) {
+    // Find jobs by location.
+    @GetMapping("/location")
+    public ResponseEntity<List<Job>> getJobsByLocation(
+            @RequestParam String location) {
 
-		jobService.deleteJob(id);
+        return ResponseEntity.ok(
+                jobService.getJobsByLocation(location));
+    }
 
-		return ResponseEntity.noContent().build();
-	}
+    // Find jobs by employment type.
+    @GetMapping("/type")
+    public ResponseEntity<List<Job>> getJobsByEmploymentType(
+            @RequestParam String employmentType) {
 
+        return ResponseEntity.ok(
+                jobService.getJobsByEmploymentType(employmentType));
+    }
+
+    // Get a job by ID.
+    @GetMapping("/{id}")
+    public ResponseEntity<Job> getJobById(
+            @PathVariable Long id) {
+
+        return jobService.getJobById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // Update a job.
+    @PutMapping("/{id}")
+    public ResponseEntity<Job> updateJob(
+            @PathVariable Long id,
+            @RequestBody Job job) {
+
+        return ResponseEntity.ok(
+                jobService.updateJob(id, job));
+    }
+
+    // Delete a job.
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteJob(
+            @PathVariable Long id) {
+
+        jobService.deleteJob(id);
+
+        return ResponseEntity.noContent().build();
+    }
 }
+

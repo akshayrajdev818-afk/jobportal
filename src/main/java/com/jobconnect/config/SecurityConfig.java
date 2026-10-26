@@ -1,24 +1,21 @@
+
 package com.jobconnect.config;
 
 import java.util.List;
-
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.jobconnect.security.JwtAuthenticationFilter;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import static org.springframework.http.HttpMethod.*;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig {
@@ -27,7 +24,6 @@ public class SecurityConfig {
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter) {
-
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
@@ -52,25 +48,33 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**")
                 .permitAll()
 
-                .requestMatchers(POST, "/api/users")
+                .requestMatchers(HttpMethod.POST, "/api/users")
                 .permitAll()
 
-                .requestMatchers(GET, "/api/jobs/**")
+                // Recruiters must authenticate to view their own jobs.
+                .requestMatchers(HttpMethod.GET, "/api/jobs/my-jobs")
+                .hasRole("RECRUITER")
+
+                // Public job browsing.
+                .requestMatchers(HttpMethod.GET, "/api/jobs/**")
                 .permitAll()
 
-                .requestMatchers(POST, "/api/jobs/**")
+                .requestMatchers(HttpMethod.POST, "/api/jobs/**")
                 .hasRole("RECRUITER")
 
-                .requestMatchers(PUT, "/api/jobs/**")
+                .requestMatchers(HttpMethod.PUT, "/api/jobs/**")
                 .hasRole("RECRUITER")
 
-                .requestMatchers(DELETE, "/api/jobs/**")
+                .requestMatchers(HttpMethod.DELETE, "/api/jobs/**")
                 .hasRole("RECRUITER")
 
-                .requestMatchers(POST, "/api/applications")
+                .requestMatchers(HttpMethod.POST, "/api/applications")
+                .hasRole("CANDIDATE")
+                
+                .requestMatchers(HttpMethod.GET, "/api/applications/my-applications")
                 .hasRole("CANDIDATE")
 
-                .requestMatchers(PUT, "/api/applications/**")
+                .requestMatchers(HttpMethod.PUT, "/api/applications/**")
                 .hasRole("RECRUITER")
 
                 .requestMatchers("/api/admin/**")
@@ -91,37 +95,25 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration configuration =
-                new CorsConfiguration();
+        CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173")
+            List.of("http://localhost:5173")
         );
 
         configuration.setAllowedMethods(
-                List.of(
-                    "GET",
-                    "POST",
-                    "PUT",
-                    "DELETE",
-                    "OPTIONS"
-                )
+            List.of("GET", "POST", "PUT", "DELETE", "OPTIONS")
         );
 
-        configuration.setAllowedHeaders(
-                List.of("*")
-        );
-
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
                 new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration(
-                "/**",
-                configuration
-        );
+        source.registerCorsConfiguration("/**", configuration);
 
         return source;
     }
 }
+
